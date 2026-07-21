@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "title": "Learn Flutter",
+    "description": "Complete Flutter widgets and state management",
+    "category": "Learning",
+    "priority": "High",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "title": "Build Portfolio",
+    "description": "Upload projects on GitHub",
+    "category": "Career",
+    "priority": "Medium",
+    "completed": true
+  }
+]
