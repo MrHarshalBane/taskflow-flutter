@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow 🚀 – Modern Flutter Task Management</title>
+  <meta name="description" content="A modern Flutter task management application with JSON-based local storage, task filtering, search, priority management, dark mode, and responsive Material 3 design." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dark-theme">
+  <!-- ====== SPLASH SCREEN ====== -->
+  <div class="splash-screen" id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo"><i class="fa-solid fa-list-check"></i></div>
+      <h1 class="splash-title">TaskFlow</h1>
+      <p class="splash-subtitle">Manage Tasks Effortlessly</p>
+      <div class="flutter-loader">
+        <div class="loader-bar"></div>
+      </div>
+      <span class="flutter-badge"><i class="fa-brands fa-flutter"></i> Flutter & Material 3</span>
+    </div>
+  </div>
+
+  <!-- ====== MAIN APP CONTAINER ====== -->
+  <div class="app-layout" id="app-layout" style="display:none;">
+    <!-- Top App Bar -->
+    <header class="app-bar">
+      <div class="app-bar-left">
+        <div class="app-logo-badge"><i class="fa-solid fa-bolt"></i></div>
+        <div>
+          <h2>TaskFlow</h2>
+          <span class="app-date" id="current-date">Today</span>
+        </div>
+      </div>
+      <div class="app-bar-actions">
+        <button class="icon-btn" id="btn-theme-toggle" title="Toggle Dark/Light Mode">
+          <i class="fa-solid fa-sun" id="theme-icon"></i>
+        </button>
+        <button class="icon-btn" id="btn-open-settings" title="Settings & JSON Data">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Overview Metrics Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card total" onclick="setQuickFilter('all')">
+        <div class="metric-icon"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="metric-info">
+          <span class="metric-num" id="metric-total">0</span>
+          <span class="metric-label">Total Tasks</span>
+        </div>
+      </div>
+      <div class="metric-card pending" onclick="setQuickFilter('pending')">
+        <div class="metric-icon"><i class="fa-regular fa-clock"></i></div>
+        <div class="metric-info">
+          <span class="metric-num" id="metric-pending">0</span>
+          <span class="metric-label">Pending</span>
+        </div>
+      </div>
+      <div class="metric-card completed" onclick="setQuickFilter('completed')">
+        <div class="metric-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="metric-info">
+          <span class="metric-num" id="metric-completed">0</span>
+          <span class="metric-label">Completed</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search & Filter Controls -->
+    <section class="controls-card">
+      <div class="search-input-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="input-search" placeholder="Search tasks by title, note, category..." />
+        <button class="clear-search-btn" id="btn-clear-search" style="display:none;">✕</button>
+      </div>
+
+      <div class="filter-pills-row">
+        <!-- Status Filter -->
+        <div class="pills-group" id="filter-status-group">
+          <button class="pill-btn active" data-filter="all">All</button>
+          <button class="pill-btn" data-filter="pending">Pending</button>
+          <button class="pill-btn" data-filter="completed">Completed</button>
+        </div>
+
+        <!-- Priority / Category dropdowns -->
+        <div class="dropdown-filters">
+          <select id="filter-category" class="select-filter">
+            <option value="all">All Categories</option>
+            <option value="Work">💼 Work</option>
+            <option value="Learning">📚 Learning</option>
+            <option value="Personal">🏠 Personal</option>
+            <option value="Career">🚀 Career</option>
+            <option value="Health">❤️ Health</option>
+          </select>
+
+          <select id="filter-priority" class="select-filter">
+            <option value="all">All Priorities</option>
+            <option value="High">🔴 High</option>
+            <option value="Medium">🟡 Medium</option>
+            <option value="Low">🟢 Low</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task List Area -->
+    <main class="tasks-container">
+      <div class="tasks-header">
+        <h3 id="tasks-heading">Tasks</h3>
+        <span class="tasks-count-pill" id="filtered-count">0 items</span>
+      </div>
+
+      <div class="tasks-list" id="tasks-list">
+        <!-- Populated via JavaScript -->
+      </div>
+    </main>
+
+    <!-- Floating Action Button (FAB) -->
+    <button class="fab-btn" id="fab-add-task" title="Add New Task">
+      <i class="fa-solid fa-plus"></i>
+      <span class="fab-label">New Task</span>
+    </button>
+  </div>
+
+  <!-- ====== ADD / EDIT TASK MODAL ====== -->
+  <div class="modal-overlay hidden" id="task-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title"><i class="fa-solid fa-circle-plus"></i> New Task</h3>
+        <button class="close-modal-btn" onclick="closeTaskModal()">✕</button>
+      </div>
+
+      <form id="task-form" class="modal-form">
+        <input type="hidden" id="task-id-field" />
+
+        <div class="form-field">
+          <label for="task-title-input">Task Title *</label>
+          <input type="text" id="task-title-input" placeholder="e.g. Master Riverpod state management" required />
+        </div>
+
+        <div class="form-field">
+          <label for="task-desc-input">Description / Notes</label>
+          <textarea id="task-desc-input" rows="3" placeholder="Add sub-points, links, or context..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="task-category-select">Category</label>
+            <select id="task-category-select" required>
+              <option value="Work">💼 Work</option>
+              <option value="Learning" selected>📚 Learning</option>
+              <option value="Personal">🏠 Personal</option>
+              <option value="Career">🚀 Career</option>
+              <option value="Health">❤️ Health</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="task-priority-select">Priority</label>
+            <select id="task-priority-select" required>
+              <option value="High">🔴 High</option>
+              <option value="Medium" selected>🟡 Medium</option>
+              <option value="Low">🟢 Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-task">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== TASK DETAILS VIEW MODAL ====== -->
+  <div class="modal-overlay hidden" id="details-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-info"></i> Task Details</h3>
+        <button class="close-modal-btn" onclick="closeDetailsModal()">✕</button>
+      </div>
+      <div class="details-body" id="details-body">
+        <!-- Rendered details -->
+      </div>
+      <div class="details-actions">
+        <button class="btn btn-secondary" id="btn-edit-from-details"><i class="fa-solid fa-pen"></i> Edit</button>
+        <button class="btn btn-danger" id="btn-delete-from-details"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SETTINGS / JSON STORAGE MODAL ====== -->
+  <div class="modal-overlay hidden" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gear"></i> Settings & Storage</h3>
+        <button class="close-modal-btn" onclick="closeSettingsModal()">✕</button>
+      </div>
+
+      <div class="settings-content">
+        <div class="setting-item">
+          <div>
+            <b>Local JSON Persistence</b>
+            <p>Tasks are stored locally adhering to <code>tasks.json</code> schema.</p>
+          </div>
+        </div>
+
+        <div class="setting-actions">
+          <button class="btn btn-outline" id="btn-export-json"><i class="fa-solid fa-download"></i> Export JSON</button>
+          <button class="btn btn-outline" id="btn-import-json-trigger"><i class="fa-solid fa-upload"></i> Import JSON</button>
+          <input type="file" id="json-file-input" accept=".json" style="display:none;" />
+          <button class="btn btn-danger" id="btn-reset-tasks"><i class="fa-solid fa-rotate-left"></i> Reset Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-message" id="toast-message"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
